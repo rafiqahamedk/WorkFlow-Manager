@@ -85,7 +85,8 @@ export async function retryExecution(req, res, next) {
 
     execution.status = 'in_progress';
     execution.retries += 1;
-    execution.ended_at = null;
+    execution.ended_at = undefined;
+    execution.markModified('logs');
     await execution.save();
 
     const result = await runExecution(String(execution._id));
@@ -134,6 +135,7 @@ export async function approveStep(req, res, next) {
         if (matchedRule.next_step_id) {
           const nextStep = await Step.findById(matchedRule.next_step_id);
           stepLog.selected_next_step = nextStep ? nextStep.name : null;
+          stepLog.next_step_id = nextStepId;
         }
       }
     }
@@ -142,6 +144,7 @@ export async function approveStep(req, res, next) {
     stepLog.approver_id = approver_id;
     stepLog.ended_at = new Date();
     execution.current_step_id = nextStepId;
+    execution.markModified('logs');
     await execution.save();
 
     // Continue execution

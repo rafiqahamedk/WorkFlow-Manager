@@ -9,9 +9,11 @@ const stepLogSchema = new mongoose.Schema(
       {
         rule: String,
         result: Boolean,
+        error: { type: String, default: null },
       },
     ],
     selected_next_step: { type: String, default: null },
+    next_step_id: { type: String, default: null },   // actual ObjectId string for traversal
     status: { type: String, enum: ['pending', 'in_progress', 'completed', 'failed', 'skipped'] },
     approver_id: { type: String, default: null },
     error_message: { type: String, default: null },
