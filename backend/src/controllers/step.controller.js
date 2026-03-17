@@ -2,6 +2,11 @@ import Step from '../models/Step.js';
 import Rule from '../models/Rule.js';
 import Workflow from '../models/Workflow.js';
 
+/** Returns true if the value is a missing/empty start_step_id */
+function isMissing(val) {
+  return !val || val === 'null' || val === 'undefined' || String(val).trim() === '';
+}
+
 export async function addStep(req, res, next) {
   try {
     const workflow = await Workflow.findById(req.params.workflow_id);
@@ -9,13 +14,11 @@ export async function addStep(req, res, next) {
 
     const step = await Step.create({ ...req.body, workflow_id: req.params.workflow_id });
 
-    // Set as start step if it's the first one
-    if (!workflow.start_step_id) {
-      workflow.start_step_id = String(step._id);
-      await workflow.save();
-    }
+    // Always set start_step_id to the lowest-order step
+    await recalculateStartStep(workflow._id);
 
-    res.status(201).json(step);
+    const updated = await Workflow.findById(workflow._id);
+    res.status(201).json({ ...step.toObject(), workflow_start_step_id: updated.start_step_id });
   } catch (err) {
     next(err);
   }
@@ -34,6 +37,12 @@ export async function updateStep(req, res, next) {
   try {
     const step = await Step.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!step) return res.status(404).json({ error: 'Step not found' });
+
+    // If order changed, recalculate start step
+    if (req.body.order !== undefined) {
+      await recalculateStartStep(step.workflow_id);
+    }
+
     res.json(step);
   } catch (err) {
     next(err);
@@ -48,14 +57,23 @@ export async function deleteStep(req, res, next) {
     // Cascade delete rules
     await Rule.deleteMany({ step_id: req.params.id });
 
-    // If this was the start step, clear it
-    await Workflow.updateOne(
-      { start_step_id: req.params.id },
-      { $set: { start_step_id: null } }
-    );
+    // Recalculate start step from remaining steps
+    await recalculateStartStep(step.workflow_id);
 
     res.json({ message: 'Step deleted' });
   } catch (err) {
     next(err);
   }
+}
+
+/**
+ * Sets workflow.start_step_id to the step with the lowest order value.
+ * Falls back to the first created step if orders are equal.
+ */
+async function recalculateStartStep(workflowId) {
+  const steps = await Step.find({ workflow_id: workflowId }).sort({ order: 1, created_at: 1 });
+  const startStepId = steps.length > 0 ? String(steps[0]._id) : null;
+  await Workflow.findByIdAndUpdate(workflowId, { start_step_id: startStepId });
+  console.log(`[StartStep] workflow ${workflowId} → start_step_id set to ${startStepId}`);
+  return startStepId;
 }

@@ -5,6 +5,7 @@ import {
   getWorkflow,
   updateWorkflow,
   deleteWorkflow,
+  repairWorkflows,
 } from '../controllers/workflow.controller.js';
 import { addStep, listSteps } from '../controllers/step.controller.js';
 import { startExecution } from '../controllers/execution.controller.js';
@@ -15,6 +16,7 @@ const router = Router();
 
 router.post('/', validate(workflowSchema), createWorkflow);
 router.get('/', listWorkflows);
+router.get('/repair', repairWorkflows);   // fix missing start_step_ids
 router.get('/:id', getWorkflow);
 router.put('/:id', validate(workflowSchema), updateWorkflow);
 router.delete('/:id', deleteWorkflow);

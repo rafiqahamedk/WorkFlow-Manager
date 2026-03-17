@@ -21,7 +21,6 @@ export async function listWorkflows(req, res, next) {
       .limit(Number(limit))
       .sort({ created_at: -1 });
 
-    // Attach step count
     const result = await Promise.all(
       workflows.map(async (wf) => {
         const stepCount = await Step.countDocuments({ workflow_id: wf._id });
@@ -59,12 +58,13 @@ export async function updateWorkflow(req, res, next) {
     const existing = await Workflow.findById(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Workflow not found' });
 
-    // Increment version on update
-    const updated = await Workflow.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, version: existing.version + 1 },
-      { new: true }
-    );
+    // Preserve start_step_id if not explicitly provided
+    const updateData = { ...req.body, version: existing.version + 1 };
+    if (!updateData.start_step_id) {
+      updateData.start_step_id = existing.start_step_id;
+    }
+
+    const updated = await Workflow.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.json(updated);
   } catch (err) {
     next(err);
@@ -76,7 +76,6 @@ export async function deleteWorkflow(req, res, next) {
     const workflow = await Workflow.findByIdAndDelete(req.params.id);
     if (!workflow) return res.status(404).json({ error: 'Workflow not found' });
 
-    // Cascade delete steps and rules
     const steps = await Step.find({ workflow_id: req.params.id });
     for (const step of steps) {
       await Rule.deleteMany({ step_id: step._id });
@@ -84,6 +83,30 @@ export async function deleteWorkflow(req, res, next) {
     await Step.deleteMany({ workflow_id: req.params.id });
 
     res.json({ message: 'Workflow deleted' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Repair all workflows that have a missing/invalid start_step_id
+export async function repairWorkflows(req, res, next) {
+  try {
+    const workflows = await Workflow.find({});
+    const results = [];
+
+    for (const wf of workflows) {
+      const needsRepair = !wf.start_step_id || wf.start_step_id === 'null';
+      if (needsRepair) {
+        const firstStep = await Step.findOne({ workflow_id: wf._id }).sort({ order: 1, created_at: 1 });
+        const startStepId = firstStep ? String(firstStep._id) : null;
+        await Workflow.findByIdAndUpdate(wf._id, { start_step_id: startStepId });
+        results.push({ workflow: wf.name, id: wf._id, start_step_id: startStepId, repaired: true });
+      } else {
+        results.push({ workflow: wf.name, id: wf._id, start_step_id: wf.start_step_id, repaired: false });
+      }
+    }
+
+    res.json({ message: 'Repair complete', results });
   } catch (err) {
     next(err);
   }

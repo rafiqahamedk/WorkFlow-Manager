@@ -11,15 +11,26 @@ export async function startExecution(req, res, next) {
     if (!workflow) return res.status(404).json({ error: 'Workflow not found' });
     if (!workflow.is_active) return res.status(400).json({ error: 'Workflow is not active' });
 
+    // Auto-repair: if start_step_id is missing, find the first step by order
+    let startStepId = workflow.start_step_id;
+    if (!startStepId || startStepId === 'null') {
+      const firstStep = await Step.findOne({ workflow_id: workflow._id }).sort({ order: 1, created_at: 1 });
+      if (!firstStep) {
+        return res.status(400).json({ error: 'Workflow has no steps. Add at least one step before executing.' });
+      }
+      startStepId = String(firstStep._id);
+      await Workflow.findByIdAndUpdate(workflow._id, { start_step_id: startStepId });
+      console.log(`[Execution] Auto-repaired start_step_id → ${startStepId}`);
+    }
+
     const execution = await Execution.create({
       workflow_id: workflow._id,
       workflow_version: workflow.version,
       data: req.body.data || {},
       triggered_by: req.body.triggered_by || 'anonymous',
-      current_step_id: workflow.start_step_id,
+      current_step_id: startStepId,
     });
 
-    // Run async (non-blocking for approval steps)
     const result = await runExecution(String(execution._id));
     res.status(201).json(result);
   } catch (err) {
