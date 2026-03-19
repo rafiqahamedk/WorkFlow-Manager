@@ -110,9 +110,10 @@ export async function retryExecution(req, res, next) {
       return res.status(400).json({ error: 'Only failed executions can be retried' });
     }
 
-    // Reset failed step log and retry from current step
+    // Reset failed step log and rewind current_step_id to that step
     const failedLog = execution.logs.find((l) => l.status === 'failed');
     if (failedLog) {
+      execution.current_step_id = failedLog.step_id; // rewind to the failed step
       failedLog.status = 'pending';
       failedLog.error_message = null;
     }
