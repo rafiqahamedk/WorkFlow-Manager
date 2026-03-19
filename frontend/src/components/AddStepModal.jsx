@@ -45,13 +45,16 @@ export default function AddStepModal({ onClose, onAdd }) {
     inputRef.current?.focus();
   }, []);
 
+  const needsEmail = stepType === 'approval' || stepType === 'notification';
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!name.trim()) return setError('Step name is required');
     if (stepType === 'approval' && !approverEmail.trim()) return setError('Approver email is required for approval steps');
+    if (stepType === 'notification' && !approverEmail.trim()) return setError('Notify email is required for notification steps');
     setLoading(true);
     try {
-      await onAdd({ name: name.trim(), step_type: stepType, approver_email: stepType === 'approval' ? approverEmail.trim() : null });
+      await onAdd({ name: name.trim(), step_type: stepType, approver_email: needsEmail ? approverEmail.trim() : null });
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to add step');
       setLoading(false);
@@ -122,7 +125,7 @@ export default function AddStepModal({ onClose, onAdd }) {
             </div>
           </div>
 
-          {/* Approver email — only for approval type */}
+          {/* Email field — approval needs approver, notification needs recipient */}
           {stepType === 'approval' && (
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
@@ -136,6 +139,22 @@ export default function AddStepModal({ onClose, onAdd }) {
                 className="w-full bg-slate-800 border border-purple-500/40 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors text-sm"
               />
               <p className="text-xs text-slate-500 mt-1.5">An approval email with Accept/Decline links will be sent to this address.</p>
+            </div>
+          )}
+
+          {stepType === 'notification' && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                Notify Email <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="email"
+                value={approverEmail}
+                onChange={(e) => { setApproverEmail(e.target.value); setError(''); }}
+                placeholder="recipient@example.com"
+                className="w-full bg-slate-800 border border-orange-500/40 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors text-sm"
+              />
+              <p className="text-xs text-slate-500 mt-1.5">A notification email will be sent to this address when this step executes.</p>
             </div>
           )}
 

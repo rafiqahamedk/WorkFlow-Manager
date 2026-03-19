@@ -67,7 +67,16 @@ function StepRow({ step, index, onEdit, onDelete, editing, editForm, setEditForm
               placeholder="Approver email"
               value={editForm.approver_email || ''}
               onChange={(e) => setEditForm({ ...editForm, approver_email: e.target.value })}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-violet-500 min-w-0"
+              className="bg-slate-800 border border-purple-500/40 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500 min-w-0"
+            />
+          )}
+          {editForm.step_type === 'notification' && (
+            <input
+              type="email"
+              placeholder="Notify email"
+              value={editForm.approver_email || ''}
+              onChange={(e) => setEditForm({ ...editForm, approver_email: e.target.value })}
+              className="bg-slate-800 border border-orange-500/40 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-orange-500 min-w-0"
             />
           )}
           <button type="button" onClick={onSave} className="bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 rounded-lg text-sm transition-colors">Save</button>
@@ -78,6 +87,11 @@ function StepRow({ step, index, onEdit, onDelete, editing, editForm, setEditForm
           <span className="flex-1 font-medium text-white text-sm">{step.name}</span>
           {step.step_type === 'approval' && step.approver_email && (
             <span className="text-xs text-purple-400/70 font-mono hidden sm:block truncate max-w-[160px]" title={step.approver_email}>
+              ✉ {step.approver_email}
+            </span>
+          )}
+          {step.step_type === 'notification' && step.approver_email && (
+            <span className="text-xs text-orange-400/70 font-mono hidden sm:block truncate max-w-[160px]" title={step.approver_email}>
               ✉ {step.approver_email}
             </span>
           )}

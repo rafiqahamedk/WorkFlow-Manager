@@ -192,6 +192,20 @@ export async function runExecution(executionId) {
     stepLog.status = 'completed';
     stepLog.ended_at = new Date();
 
+    // ── Notification step: send email to step.approver_email ─────────────────
+    if (step.step_type === 'notification' && step.approver_email) {
+      const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0];
+      const viewUrl = `${frontendUrl}/executions/${executionId}`;
+      createNotification({
+        user_id: owner ? String(owner._id) : 'system',
+        user_email: step.approver_email,
+        message: `Notification from workflow "${workflow?.name}" — step "${step.name}" executed.`,
+        type: 'info',
+        execution_id: executionId,
+        emailExtra: { viewUrl },
+      }).catch((e) => console.error('[Executor] Notification step email failed:', e.message));
+    }
+
     execution.logs.push(stepLog);
     execution.current_step_id = nextStepId;
     execution.markModified('logs');

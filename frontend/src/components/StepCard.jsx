@@ -55,6 +55,15 @@ export default function StepCard({ step, index, allSteps, onDelete, onUpdate, on
                 className="bg-slate-800 border border-purple-500/40 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 w-52"
               />
             )}
+            {form.step_type === 'notification' && (
+              <input
+                type="email"
+                value={form.approver_email}
+                onChange={(e) => setForm({ ...form, approver_email: e.target.value })}
+                placeholder="recipient@example.com"
+                className="bg-slate-800 border border-orange-500/40 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 w-52"
+              />
+            )}
             <button type="button" onClick={handleSave} className="bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 rounded-lg text-sm transition-colors">Save</button>
             <button type="button" onClick={() => setEditing(false)} className="text-slate-500 hover:text-slate-300 text-sm transition-colors">Cancel</button>
           </div>
@@ -69,6 +78,11 @@ export default function StepCard({ step, index, allSteps, onDelete, onUpdate, on
             </span>
             {step.step_type === 'approval' && step.approver_email && (
               <span className="text-xs text-purple-400/70 font-mono hidden sm:block truncate max-w-[160px]" title={step.approver_email}>
+                ✉ {step.approver_email}
+              </span>
+            )}
+            {step.step_type === 'notification' && step.approver_email && (
+              <span className="text-xs text-orange-400/70 font-mono hidden sm:block truncate max-w-[160px]" title={step.approver_email}>
                 ✉ {step.approver_email}
               </span>
             )}
