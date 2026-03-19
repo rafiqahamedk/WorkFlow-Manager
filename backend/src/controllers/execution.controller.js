@@ -93,8 +93,11 @@ export async function listExecutions(req, res, next) {
 
 export async function cancelExecution(req, res, next) {
   try {
-    const execution = await Execution.findById(req.params.id);
+    const execution = await Execution.findById(req.params.id).populate('workflow_id', 'created_by');
     if (!execution) return res.status(404).json({ error: 'Execution not found' });
+    if (String(execution.workflow_id?.created_by) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     if (['completed', 'canceled', 'failed'].includes(execution.status)) {
       return res.status(400).json({ error: `Cannot cancel execution in status: ${execution.status}` });
     }
@@ -109,8 +112,11 @@ export async function cancelExecution(req, res, next) {
 
 export async function retryExecution(req, res, next) {
   try {
-    const execution = await Execution.findById(req.params.id);
+    const execution = await Execution.findById(req.params.id).populate('workflow_id', 'created_by');
     if (!execution) return res.status(404).json({ error: 'Execution not found' });
+    if (String(execution.workflow_id?.created_by) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     if (execution.status !== 'failed') {
       return res.status(400).json({ error: 'Only failed executions can be retried' });
     }

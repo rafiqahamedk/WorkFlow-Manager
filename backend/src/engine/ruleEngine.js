@@ -25,29 +25,51 @@ const KEYWORDS = new Set([
 
 /**
  * Transform a condition string so every bare identifier that is a data field
- * (or any unknown identifier) gets prefixed with "data.".
- * JS keywords and built-ins are left alone.
+ * gets prefixed with "data.". String literals are preserved as-is.
+ *
+ * Strategy:
+ * 1. Extract string literals → placeholders (non-word chars, safe from regex)
+ * 2. Replace bare identifiers with data.xxx (helper function names excluded)
+ * 3. Expand helper functions: contains(), startsWith(), endsWith()
+ * 4. Restore string literals
  */
-function transformCondition(condition, data) {
-  // First handle helper functions: contains(field, "val") etc.
-  let expr = condition
-    .replace(/contains\s*\(\s*(\w+)\s*,\s*["'](.+?)["']\s*\)/g,
-      (_, field, val) => `(data.${field} !== undefined && String(data.${field}).toLowerCase().includes("${val.toLowerCase()}"))`
-    )
-    .replace(/startsWith\s*\(\s*(\w+)\s*,\s*["'](.+?)["']\s*\)/g,
-      (_, field, val) => `(data.${field} !== undefined && String(data.${field}).startsWith("${val}"))`
-    )
-    .replace(/endsWith\s*\(\s*(\w+)\s*,\s*["'](.+?)["']\s*\)/g,
-      (_, field, val) => `(data.${field} !== undefined && String(data.${field}).endsWith("${val}"))`
-    );
+function transformCondition(condition) {
+  // Step 1: extract string literals — §N§ uses § (non-word char, won't match \b)
+  const literals = [];
+  let expr = condition.replace(/["'](?:[^"'\\]|\\.)*["']/g, (match) => {
+    literals.push(match);
+    return `\xA7${literals.length - 1}\xA7`;
+  });
 
-  // Replace bare identifiers with data.<identifier>
-  // Word boundary \b ensures we don't partially replace things like "includes"
-  expr = expr.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g, (match) => {
-    if (KEYWORDS.has(match)) return match;          // leave JS keywords alone
-    if (match.startsWith('data.')) return match;    // already prefixed
+  // Step 2: replace bare identifiers — exclude function-call names (followed by '(')
+  expr = expr.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b(?!\s*\()/g, (match) => {
+    if (KEYWORDS.has(match)) return match;
     return `data.${match}`;
   });
+
+  // Step 3: expand helper functions — field is now data.field after step 2
+  expr = expr
+    .replace(/contains\s*\(\s*(data\.\w+)\s*,\s*\xA7(\d+)\xA7\s*\)/g,
+      (_, field, idx) => {
+        const inner = literals[parseInt(idx)].slice(1, -1).toLowerCase();
+        return `(${field} !== undefined && String(${field}).toLowerCase().includes("${inner}"))`;
+      }
+    )
+    .replace(/startsWith\s*\(\s*(data\.\w+)\s*,\s*\xA7(\d+)\xA7\s*\)/g,
+      (_, field, idx) => {
+        const inner = literals[parseInt(idx)].slice(1, -1);
+        return `(${field} !== undefined && String(${field}).startsWith("${inner}"))`;
+      }
+    )
+    .replace(/endsWith\s*\(\s*(data\.\w+)\s*,\s*\xA7(\d+)\xA7\s*\)/g,
+      (_, field, idx) => {
+        const inner = literals[parseInt(idx)].slice(1, -1);
+        return `(${field} !== undefined && String(${field}).endsWith("${inner}"))`;
+      }
+    );
+
+  // Step 4: restore string literals
+  expr = expr.replace(/\xA7(\d+)\xA7/g, (_, i) => literals[parseInt(i)]);
 
   return expr;
 }
@@ -55,7 +77,7 @@ function transformCondition(condition, data) {
 export function evaluateCondition(condition, data) {
   if (!condition || condition.trim().toUpperCase() === 'DEFAULT') return true;
 
-  const transformed = transformCondition(condition, data);
+  const transformed = transformCondition(condition);
 
   console.log(`[RuleEngine] original  : ${condition}`);
   console.log(`[RuleEngine] transformed: ${transformed}`);
