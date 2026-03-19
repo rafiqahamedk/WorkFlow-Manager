@@ -9,7 +9,7 @@ import { createNotification } from '../services/notificationService.js';
 
 export async function startExecution(req, res, next) {
   try {
-    const workflow = await Workflow.findById(req.params.workflow_id);
+    const workflow = await Workflow.findOne({ _id: req.params.workflow_id, created_by: req.user.id });
     if (!workflow) return res.status(404).json({ error: 'Workflow not found' });
     if (!workflow.is_active) return res.status(400).json({ error: 'Workflow is not active' });
 

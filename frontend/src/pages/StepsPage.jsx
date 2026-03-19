@@ -135,7 +135,11 @@ export default function StepsPage() {
   }
 
   async function saveEdit() {
-    const res = await updateStep(editingId, editForm);
+    const payload = {
+      ...editForm,
+      approver_email: editForm.approver_email?.trim() || null,
+    };
+    const res = await updateStep(editingId, payload);
     setSteps((prev) => prev.map((s) => String(s._id) === String(editingId) ? { ...s, ...res.data } : s));
     setEditingId(null);
   }

@@ -15,7 +15,11 @@ export default function StepCard({ step, index, allSteps, onDelete, onUpdate, on
   const cfg = TYPE_CONFIG[step.step_type] || TYPE_CONFIG.task;
 
   async function handleSave() {
-    await onUpdate(step._id, form);
+    const payload = {
+      ...form,
+      approver_email: form.approver_email?.trim() || null,
+    };
+    await onUpdate(step._id, payload);
     setEditing(false);
   }
 
