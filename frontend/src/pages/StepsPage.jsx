@@ -61,6 +61,15 @@ function StepRow({ step, index, onEdit, onDelete, editing, editForm, setEditForm
           >
             {['task', 'approval', 'notification'].map((t) => <option key={t}>{t}</option>)}
           </select>
+          {editForm.step_type === 'approval' && (
+            <input
+              type="email"
+              placeholder="Approver email"
+              value={editForm.approver_email || ''}
+              onChange={(e) => setEditForm({ ...editForm, approver_email: e.target.value })}
+              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-violet-500 min-w-0"
+            />
+          )}
           <button type="button" onClick={onSave} className="bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 rounded-lg text-sm transition-colors">Save</button>
           <button type="button" onClick={onCancel} className="text-slate-500 hover:text-slate-300 text-sm transition-colors">Cancel</button>
         </div>
@@ -122,7 +131,7 @@ export default function StepsPage() {
 
   function startEdit(step) {
     setEditingId(step._id);
-    setEditForm({ name: step.name, step_type: step.step_type, order: step.order });
+    setEditForm({ name: step.name, step_type: step.step_type, order: step.order, approver_email: step.approver_email || '' });
   }
 
   async function saveEdit() {

@@ -12,7 +12,14 @@ export async function addStep(req, res, next) {
     const workflow = await Workflow.findById(req.params.workflow_id);
     if (!workflow) return res.status(404).json({ error: 'Workflow not found' });
 
-    const step = await Step.create({ ...req.body, workflow_id: req.params.workflow_id });
+    // Auto-assign order if not provided
+    let order = req.body.order;
+    if (order === undefined) {
+      const count = await Step.countDocuments({ workflow_id: req.params.workflow_id });
+      order = count;
+    }
+
+    const step = await Step.create({ ...req.body, order, workflow_id: req.params.workflow_id });
 
     // Always set start_step_id to the lowest-order step
     await recalculateStartStep(workflow._id);

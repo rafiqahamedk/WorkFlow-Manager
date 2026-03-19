@@ -11,7 +11,7 @@ export const workflowSchema = z.object({
 export const stepSchema = z.object({
   name: z.string().min(1),
   step_type: z.enum(['task', 'approval', 'notification']),
-  order: z.number().int().min(0),
+  order: z.number().int().min(0).optional(),
   metadata: z.record(z.any()).optional(),
   approver_email: z.string().email().nullable().optional(),
 });

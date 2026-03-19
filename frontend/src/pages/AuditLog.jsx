@@ -23,6 +23,7 @@ function StatusBadge({ status }) {
 export default function AuditLog() {
   const [executions, setExecutions] = useState([]);
   const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState({ completed: 0, failed: 0, running: 0 });
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
   const limit = 10;
@@ -34,14 +35,19 @@ export default function AuditLog() {
     });
   }, [page]);
 
-  const totalPages = Math.ceil(total / limit);
+  // Fetch all pages to compute accurate stats (or use a dedicated stats endpoint if available)
+  useEffect(() => {
+    getExecutions({ page: 1, limit: 1000 }).then((res) => {
+      const all = res.data.data;
+      setStats({
+        completed: all.filter((e) => e.status === 'completed').length,
+        failed: all.filter((e) => e.status === 'failed').length,
+        running: all.filter((e) => e.status === 'in_progress').length,
+      });
+    });
+  }, []);
 
-  const stats = {
-    total,
-    completed: executions.filter((e) => e.status === 'completed').length,
-    failed: executions.filter((e) => e.status === 'failed').length,
-    running: executions.filter((e) => e.status === 'in_progress').length,
-  };
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <div>

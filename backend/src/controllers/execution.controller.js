@@ -61,6 +61,11 @@ export async function getExecution(req, res, next) {
   try {
     const execution = await Execution.findById(req.params.id).populate('workflow_id');
     if (!execution) return res.status(404).json({ error: 'Execution not found' });
+
+    // Ownership check: verify the execution belongs to a workflow owned by this user
+    const workflow = await Workflow.findOne({ _id: execution.workflow_id, created_by: req.user.id });
+    if (!workflow) return res.status(403).json({ error: 'Access denied' });
+
     res.json(execution);
   } catch (err) {
     next(err);

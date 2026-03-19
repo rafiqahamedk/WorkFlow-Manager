@@ -100,7 +100,7 @@ export async function deleteWorkflow(req, res, next) {
 // Repair all workflows that have a missing/invalid start_step_id
 export async function repairWorkflows(req, res, next) {
   try {
-    const workflows = await Workflow.find({});
+    const workflows = await Workflow.find({ created_by: req.user.id });
     const results = [];
 
     for (const wf of workflows) {
