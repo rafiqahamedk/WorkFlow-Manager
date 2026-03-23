@@ -12,9 +12,9 @@ Every execution is fully persisted to MongoDB at each step, making it safe to re
 
 The frontend is a React 18 single-page application with a guided 3-step wizard for building workflows, a live execution view with auto-polling, a full audit log, and a real-time notification bell. The backend is a Node.js + Express REST API with JWT authentication, Zod validation, and a custom rule engine that supports comparisons, logical operators, string functions, and a DEFAULT fallback.
 
-**Live Demo**
-- Frontend: https://work-flow-manager-4dle.vercel.app
-- Backend API: https://workflow-manager-api.onrender.com
+## 🎥 Demo Video
+
+[Watch Demo](./demo.mp4)
 
 ---
 
