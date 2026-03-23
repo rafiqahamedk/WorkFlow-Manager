@@ -233,8 +233,6 @@ workflowExecutor.js
 | Auth | bcryptjs | Password hashing |
 | Email | Nodemailer | SMTP email delivery |
 | Email | Gmail SMTP | Email transport |
-| Deploy (FE) | Vercel | Frontend hosting + SPA rewrites |
-| Deploy (BE) | Render | Backend hosting + env management |
 
 ---
 
